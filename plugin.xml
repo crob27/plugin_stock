@@ -57,7 +57,7 @@
 			  `id_ouvrage` INT(11) NOT NULL,
 			  `id_exemplaire` INT(11) NOT NULL,
 			  `id_eleve` INT(11) NOT NULL,
-			  `id_preteur` INT(11) NOT NULL,
+			  `login_preteur` VARCHAR(50) NOT NULL,
 			  `date_pret` DATETIME NOT NULL,
 			  `date_previsionnelle_retour` DATETIME NOT NULL,
 			  `date_retour` DATETIME NOT NULL,
