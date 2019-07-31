@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<gepinstall type="plugin">
+	<!-- nom du dossier contenant les fichiers du plugin -->
+	<nom>plugin_stock</nom>
+	<creationDate>07 2019</creationDate>
+	<auteur>S.Boireau</auteur>
+	<licence>GNU/GPL</licence>
+	<auteurCourriel>stephane.boireau@ac-rouen.fr</auteurCourriel>
+	<auteurSite>http://www.sylogix.org/projects/gepi/wiki</auteurSite>
+	<version>0.1</version>
+	<versiongepi>1.7.4</versiongepi>
+	<description>Plugin stock</description>
+	<description_detaillee>Gestion d'un stock de livres à étudier prêtés aux élèves par les professeurs de français.</description_detaillee>
+	<installation>
+		<!-- requêtes SQL exécutées à l'installation du plugin -->
+		<requetes>
+			<requete>
+			CREATE TABLE IF NOT EXISTS `plugin_stock_users` (
+			  `login` varchar(50) NOT NULL,
+			  `statut` varchar(50) NOT NULL,
+			  PRIMARY KEY `login` (`login`)
+			) ENGINE=MyISAM ;
+			</requete>
+			<requete>
+			CREATE TABLE IF NOT EXISTS `plugin_stock_eleves` (
+			  `id` int(11) NOT NULL AUTO_INCREMENT,
+			  `id_eleve` INT(11) NOT NULL,
+			  `nom` varchar(50) NOT NULL,
+			  `prenom` varchar(50) NOT NULL,
+			  PRIMARY KEY (`id`),
+			  UNIQUE KEY `login` (`login`)
+			) ENGINE=MyISAM ;
+			</requete>
+			<requete>
+			CREATE TABLE IF NOT EXISTS `plugin_stock_ouvrages` (
+			  `id` int(11) NOT NULL AUTO_INCREMENT,
+			  `titre` VARCHAR(255) NOT NULL,
+			  `auteur` varchar(100) NOT NULL,
+			  `code` varchar(50) NOT NULL,
+			  PRIMARY KEY (`id`)
+			) ENGINE=MyISAM ;
+			</requete>
+			<requete>
+			CREATE TABLE IF NOT EXISTS `plugin_stock_exemplaires` (
+			  `id` int(11) NOT NULL AUTO_INCREMENT,
+			  `id_ouvrage` INT(11) NOT NULL,
+			  `numero` TINYINT(1) NOT NULL,
+			  `etat` varchar(50) NOT NULL,
+			  PRIMARY KEY (`id`),
+			  UNIQUE KEY `login` (`login`)
+			) ENGINE=MyISAM ;
+			</requete>
+			<requete>
+			CREATE TABLE IF NOT EXISTS `plugin_stock_emprunts` (
+			  `id` int(11) NOT NULL AUTO_INCREMENT,
+			  `id_ouvrage` INT(11) NOT NULL,
+			  `id_exemplaire` INT(11) NOT NULL,
+			  `id_eleve` INT(11) NOT NULL,
+			  `id_preteur` INT(11) NOT NULL,
+			  `date_pret` DATETIME NOT NULL,
+			  `date_previsionnelle_retour` DATETIME NOT NULL,
+			  `date_retour` DATETIME NOT NULL,
+			  PRIMARY KEY (`id`),
+			  UNIQUE KEY `pret` (`id_ouvrage`, `id_exemplaire`, `id_eleve`)
+			) ENGINE=MyISAM ;
+			</requete>
+		</requetes>
+	</installation>
+	<desinstallation>
+		<!-- requêtes SQL exécutées à la désinstallation du plugin -->
+		<requetes>
+			<requete>
+			DROP TABLE `plugin_stock_users`;
+			</requete>
+			<requete>
+			DROP TABLE `plugin_stock_eleves`;
+			</requete>
+			<requete>
+			DROP TABLE `plugin_stock_ouvrages`;
+			</requete>
+			<requete>
+			DROP TABLE `plugin_stock_exemplaires`;
+			</requete>
+			<requete>
+			DROP TABLE `plugin_stock_emprunts`;
+			</requete>
+		</requetes>
+	</desinstallation>
+	<administration>
+		<fichier>
+		<!-- les autorisations qui suivent, portant sur le satut de l'utilisateur, peuvent être
+		confirmées/affinées dans la fonction calcul_autorisation_plugin_example() du fichier
+		functions_plugin_example.php -->
+			<nomfichier autorisation="A-P-C-S-sec-autre-E-R">index.php</nomfichier>
+			<nomfichier autorisation="A">admin.php</nomfichier>
+			<nomfichier autorisation="A">autre_script.php</nomfichier>
+		</fichier>
+		<menu>
+		<!-- liste des accès aux scripts du plugin apparaissant sur la page d'accueil et dans
+		la barre de menu, si la fonction  calcul_autorisation_plugin_example() est définies ces
+		accès doivent y être confirmés et éventuellement affinés -->
+			<item autorisation="A-P-C-S-sec-autre-E-R" titre="Utiliser" description="Description du script">index.php</item>
+			<item autorisation="A" titre="Administrer" description="Administration du plugin">admin.php</item>
+		</menu>
+	</administration>
+</gepinstall>
