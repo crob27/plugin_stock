@@ -29,7 +29,7 @@
 			  `nom` varchar(50) NOT NULL,
 			  `prenom` varchar(50) NOT NULL,
 			  PRIMARY KEY (`id`),
-			  UNIQUE KEY `login` (`login`)
+			  UNIQUE KEY `id_eleve` (`id_eleve`)
 			) ENGINE=MyISAM ;
 			</requete>
 			<requete>
@@ -47,8 +47,7 @@
 			  `id_ouvrage` INT(11) NOT NULL,
 			  `numero` TINYINT(1) NOT NULL,
 			  `etat` varchar(50) NOT NULL,
-			  PRIMARY KEY (`id`),
-			  UNIQUE KEY `login` (`login`)
+			  PRIMARY KEY (`id`)
 			) ENGINE=MyISAM ;
 			</requete>
 			<requete>
