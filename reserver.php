@@ -23,7 +23,7 @@ $user_auth->verifDroits();
 
 
 //**************** EN-TETE *****************
-$titre_page = "Plugin stock (2)";
+$titre_page = "Plugin stock - Réserver";
 require_once("../../lib/header.inc.php");
 //**************** FIN EN-TETE *************
 
@@ -32,7 +32,14 @@ require_once("../../lib/header.inc.php");
 <p class=bold><a href="../../accueil.php"><img src='../../images/icons/back.png' alt='Retour' class='back_link'/> Retour à l'accueil</a> | <a href="index.php">Retour</a></p>
 
 <h2>Plugin stock</h2>
-<p>Autre script.</p>
+<p>Réserver des ouvrages/exemplaires pour une certaine période.<br />
+A charge aux utilisateurs après ces saisies de s'entendre entre eux pour modifier éventuellement ces réservations.<br />
+Permettre aux administrateurs de supprimer des réservations.<br />
+Afficher la liste des ouvrages, le nombre d'exemplaires déjà réservés pour une période à venir.<br />
+Une fois l'ouvrage choisi, afficher les périodes de réservation, les exemplaires restants,...<br />
+Pouvoir réserver du tant au tant<br />
+<br /><br /><br />
+</p>
 
 <?php
 include("../../lib/footer.inc.php");
