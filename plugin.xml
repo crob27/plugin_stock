@@ -47,6 +47,7 @@
 			  `id_ouvrage` INT(11) NOT NULL,
 			  `numero` TINYINT(1) NOT NULL,
 			  `etat` varchar(50) NOT NULL,
+			  `statut` varchar(50) NOT NULL,
 			  PRIMARY KEY (`id`)
 			) ENGINE=MyISAM ;
 			</requete>
@@ -89,17 +90,26 @@
 	<administration>
 		<fichier>
 		<!-- les autorisations qui suivent, portant sur le satut de l'utilisateur, peuvent être
-		confirmées/affinées dans la fonction calcul_autorisation_plugin_example() du fichier
-		functions_plugin_example.php -->
+		confirmées/affinées dans la fonction calcul_autorisation_plugin_stock() du fichier
+		functions_plugin_stock.php -->
+			<!--
 			<nomfichier autorisation="A-P-C-S-sec-autre-E-R">index.php</nomfichier>
 			<nomfichier autorisation="A">admin.php</nomfichier>
-			<nomfichier autorisation="A">autre_script.php</nomfichier>
+			-->
+			<nomfichier autorisation="A-P-C-S">index.php</nomfichier>
+			<nomfichier autorisation="A-P-C-S">admin.php</nomfichier>
+			<nomfichier autorisation="A-P-C-S">saisir_ouvrage.php</nomfichier>
+			<nomfichier autorisation="A-P-C-S">preter.php</nomfichier>
+			<nomfichier autorisation="A-P-C-S">reserver.php</nomfichier>
 		</fichier>
 		<menu>
 		<!-- liste des accès aux scripts du plugin apparaissant sur la page d'accueil et dans
 		la barre de menu, si la fonction  calcul_autorisation_plugin_example() est définies ces
 		accès doivent y être confirmés et éventuellement affinés -->
+			<!--
 			<item autorisation="A-P-C-S-sec-autre-E-R" titre="Utiliser" description="Description du script">index.php</item>
+			-->
+			<item autorisation="A-P-C-S" titre="Utiliser" description="Plugin stock/prêt">index.php</item>
 			<item autorisation="A" titre="Administrer" description="Administration du plugin">admin.php</item>
 		</menu>
 	</administration>
