@@ -48,6 +48,7 @@
 			  `numero` TINYINT(1) NOT NULL,
 			  `etat` varchar(50) NOT NULL,
 			  `statut` varchar(50) NOT NULL,
+			  `date_mise_en_service` DATETIME NOT NULL,
 			  PRIMARY KEY (`id`)
 			) ENGINE=MyISAM ;
 			</requete>
@@ -57,6 +58,8 @@
 			  `id_ouvrage` INT(11) NOT NULL,
 			  `id_exemplaire` INT(11) NOT NULL,
 			  `id_eleve` INT(11) NOT NULL,
+			  `classe` VARCHAR(100) NOT NULL,
+			  `mef_code` VARCHAR(20) NOT NULL,
 			  `login_preteur` VARCHAR(50) NOT NULL,
 			  `date_pret` DATETIME NOT NULL,
 			  `date_previsionnelle_retour` DATETIME NOT NULL,
