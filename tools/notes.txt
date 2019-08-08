@@ -18,4 +18,31 @@ $javascript_specifique[] = "lib/DHTMLcalendar/calendar-setup";
 <input type='text' name='display_date_debut' id='display_date_debut' size='10' value=\"".(isset($display_date_debut) ? $display_date_debut : "")."\" onKeyDown=\"clavier_date(this.id,event);\" AutoComplete=\"off\" />
 ".img_calendrier_js("display_date_debut", "img_bouton_display_date_debut")."
 
+			<requete>
+			CREATE TABLE IF NOT EXISTS `plugin_stock_exemplaires` (
+			  `id` int(11) NOT NULL AUTO_INCREMENT,
+			  `id_ouvrage` INT(11) NOT NULL,
+			  `numero` TINYINT(1) NOT NULL,
+			  `etat` varchar(50) NOT NULL,
+			  `statut` varchar(50) NOT NULL,
+			  `date_mise_en_service` DATETIME NOT NULL,
+			  PRIMARY KEY (`id`)
+			) ENGINE=MyISAM ;
+			</requete>
+			<requete>
+			CREATE TABLE IF NOT EXISTS `plugin_stock_emprunts` (
+			  `id` int(11) NOT NULL AUTO_INCREMENT,
+			  `id_ouvrage` INT(11) NOT NULL,
+			  `id_exemplaire` INT(11) NOT NULL,
+			  `id_eleve` INT(11) NOT NULL,
+			  `classe` VARCHAR(100) NOT NULL,
+			  `mef_code` VARCHAR(20) NOT NULL,
+			  `login_preteur` VARCHAR(50) NOT NULL,
+			  `date_pret` DATETIME NOT NULL,
+			  `date_previsionnelle_retour` DATETIME NOT NULL,
+			  `date_retour` DATETIME NOT NULL,
+			  PRIMARY KEY (`id`),
+			  UNIQUE KEY `pret` (`id_ouvrage`, `id_exemplaire`, `id_eleve`)
+			) ENGINE=MyISAM ;
+			</requete>
 
