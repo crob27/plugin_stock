@@ -1,0 +1,21 @@
+
+$sql="SELECT DISTINCT c.id, c.id as id_classe, c.classe FROM classes c ORDER BY classe";
+
+retourne_sql_mes_classes()
+
+get_groups_for_prof($_login)
+
+$javascript_specifique[] = "lib/tablekit";
+$utilisation_tablekit="ok";
+
+
+
+$style_specifique[] = "lib/DHTMLcalendar/calendarstyle";
+$javascript_specifique[] = "lib/DHTMLcalendar/calendar";
+$javascript_specifique[] = "lib/DHTMLcalendar/lang/calendar-fr";
+$javascript_specifique[] = "lib/DHTMLcalendar/calendar-setup";
+
+<input type='text' name='display_date_debut' id='display_date_debut' size='10' value=\"".(isset($display_date_debut) ? $display_date_debut : "")."\" onKeyDown=\"clavier_date(this.id,event);\" AutoComplete=\"off\" />
+".img_calendrier_js("display_date_debut", "img_bouton_display_date_debut")."
+
+
