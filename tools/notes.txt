@@ -47,3 +47,28 @@ $javascript_specifique[] = "lib/DHTMLcalendar/calendar-setup";
 			) ENGINE=MyISAM ;
 			</requete>
 
+Quelques commandes GIT
+
+git add <dossiers/fichiers>
+git rm <dossiers/fichiers>
+
+git commit -m "" <dossiers/fichiers>
+
+git push origin
+
+git remote add crob27 git://github.com/crob27/plugin_stock.git
+
+git remote add LeVengeurMasque git://github.com/LeVengeurMasque/plugin_stock.git
+
+git branch -a
+
+git remote -v
+
+git fetch --all
+
+
+
+
+
+
+
