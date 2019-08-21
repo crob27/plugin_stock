@@ -1,5 +1,7 @@
 <?php
 
+$tab_statuts_exemplaires_ouvrages=array('', 'perdu');
+
 // l'utilisateur a-t-il accès au script ?
 function calcul_autorisation_plugin_stock($login,$chemin_script)
 	{
@@ -15,6 +17,12 @@ function calcul_autorisation_plugin_stock($login,$chemin_script)
 		case "index.php":
 			return true;
 			break;
+		case "reserver.php":
+			return true;
+			break;
+		case "preter.php":
+			return true;
+			break;
 		case "admin.php":
 			//return ($_SESSION['login']==getSettingValue("admin_plugin_stock"));
 			// Autoriser les administrateurs et des utilisateurs particuliers
@@ -23,7 +31,24 @@ function calcul_autorisation_plugin_stock($login,$chemin_script)
 				$retour=true;
 			}
 			else {
-				$sql="SELECT 1=1 FROM plugin_stock_users WHERE statut='administrateur';";
+				$sql="SELECT 1=1 FROM plugin_stock_users WHERE statut='administrateur' AND login='".$login."';";
+				//echo "$sql<br />";
+				$test=mysqli_query($mysqli, $sql);
+				if(mysqli_num_rows($test)>0) {
+					$retour=true;
+				}
+			}
+			return $retour;
+			break;
+		case "saisir_ouvrage.php":
+			//return ($_SESSION['login']==getSettingValue("admin_plugin_stock"));
+			// Autoriser les administrateurs et des utilisateurs particuliers
+			$retour=false;
+			if($_SESSION['statut']=='administrateur') {
+				$retour=true;
+			}
+			else {
+				$sql="SELECT 1=1 FROM plugin_stock_users WHERE statut='administrateur' AND login='".$login."';";
 				//echo "$sql<br />";
 				$test=mysqli_query($mysqli, $sql);
 				if(mysqli_num_rows($test)>0) {
@@ -100,4 +125,73 @@ function post_desinstallation_plugin_stock()
 		else return "Impossible de supprimer dans la table 'setting' : ".((is_object($mysqli)) ? mysqli_error($mysqli) : (($___mysqli_res = mysqli_connect_error()) ? $___mysqli_res : false));
 	}
 
+function plugin_stock_is_administrateur($login) {
+	global $mysqli;
+
+	$retour=false;
+
+	if(get_valeur_champ('utilisateurs', "login='".$login."'", 'statut')=='administrateur') {
+		$retour=true;
+	}
+	else {
+		$sql="SELECT 1=1 FROM plugin_stock_users WHERE statut='administrateur' AND login='".$login."';";
+		//echo "$sql<br />";
+		$test=mysqli_query($mysqli, $sql);
+		if(mysqli_num_rows($test)>0) {
+			$retour=true;
+		}
+	}
+
+	return $retour;
+}
+
+function plugin_stock_afficher_ouvrage($id_ouvrage) {
+	global $mysqli;
+
+	$retour='';
+
+	$sql="SELECT * FROM plugin_stock_ouvrages WHERE id='".$id_ouvrage."';";
+	$res=mysqli_query($mysqli, $sql);
+	if(mysqli_num_rows($res)>0) {
+		$lig=mysqli_fetch_object($res);
+		$retour=$lig->titre." de ".$lig->auteur." (".$lig->code.")";
+	}
+
+	return $retour;
+}
+
+function plugin_stock_get_eleve($id_eleve) {
+	global $mysqli;
+
+	$retour="Inconnu ($id_eleve)";
+
+	$sql="SELECT * FROM plugin_stock_eleves WHERE id_eleve='".$id_eleve."';";
+	$res=mysqli_query($mysqli, $sql);
+	if(mysqli_num_rows($res)>0) {
+		$lig=mysqli_fetch_object($res);
+		$retour=$lig->nom." ".$lig->prenom;
+	}
+
+	return $retour;
+}
+
+function plugin_stock_enregistre_eleve($eleve) {
+	global $mysqli;
+
+	$sql="SELECT * FROM plugin_stock_eleves WHERE id_eleve='".$eleve['id_eleve']."';";
+	$res=mysqli_query($mysqli, $sql);
+	if(mysqli_num_rows($res)>0) {
+		$retour=true;
+	}
+	else {
+		$sql="INSERT INTO plugin_stock_eleves SET id_eleve='".$eleve['id_eleve']."', 
+									nom='".mysqli_real_escape_string($mysqli, $eleve['nom'])."', 
+									prenom='".mysqli_real_escape_string($mysqli, $eleve['prenom'])."';";
+		//echo "$sql<br />";
+		$insert=mysqli_query($mysqli, $sql);
+		$retour=$insert;
+	}
+
+	return $retour;
+}
 ?>

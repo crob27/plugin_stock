@@ -49,6 +49,7 @@
 			  `etat` varchar(50) NOT NULL,
 			  `statut` varchar(50) NOT NULL,
 			  `date_mise_en_service` DATETIME NOT NULL,
+			  `date_de_retrait` DATETIME NOT NULL,
 			  PRIMARY KEY (`id`)
 			) ENGINE=MyISAM ;
 			</requete>
@@ -61,12 +62,31 @@
 			  `classe` VARCHAR(100) NOT NULL,
 			  `mef_code` VARCHAR(20) NOT NULL,
 			  `annee_scolaire` VARCHAR(100) NOT NULL,
+			  `id_classe` INT(11) NOT NULL DEFAULT '0',
+			  `id_groupe` INT(11) NOT NULL DEFAULT '0',
 			  `login_preteur` VARCHAR(50) NOT NULL,
 			  `date_pret` DATETIME NOT NULL,
 			  `date_previsionnelle_retour` DATETIME NOT NULL,
 			  `date_retour` DATETIME NOT NULL,
 			  PRIMARY KEY (`id`),
-			  UNIQUE KEY `pret` (`id_ouvrage`, `id_exemplaire`, `id_eleve`)
+			  UNIQUE KEY `pret` (`id_ouvrage`,`id_exemplaire`,`id_eleve`,`annee_scolaire`,`date_pret`)
+			) ENGINE=MyISAM ;
+			</requete>
+			<!--
+			  UNIQUE KEY `pret` (`id_ouvrage`, `id_exemplaire`, `id_eleve`, annee_scolaire)
+			-->
+			<requete>
+			CREATE TABLE IF NOT EXISTS `plugin_stock_reservations` (
+			  `id` int(11) NOT NULL AUTO_INCREMENT,
+			  `id_ouvrage` INT(11) NOT NULL,
+			  `nb_exemplaires` INT(11) NOT NULL,
+			  `id_classe` INT(11) NOT NULL DEFAULT '0',
+			  `id_groupe` INT(11) NOT NULL DEFAULT '0',
+			  `annee_scolaire` VARCHAR(100) NOT NULL,
+			  `login_preteur` VARCHAR(50) NOT NULL,
+			  `date_previsionnelle_pret` DATETIME NOT NULL,
+			  `date_previsionnelle_retour` DATETIME NOT NULL,
+			  PRIMARY KEY (`id`)
 			) ENGINE=MyISAM ;
 			</requete>
 		</requetes>
@@ -89,6 +109,9 @@
 			<requete>
 			DROP TABLE `plugin_stock_emprunts`;
 			</requete>
+			<requete>
+			DROP TABLE `plugin_stock_reservations`;
+			</requete>
 		</requetes>
 	</desinstallation>
 	<administration>
@@ -105,6 +128,7 @@
 			<nomfichier autorisation="A-P-C-S">saisir_ouvrage.php</nomfichier>
 			<nomfichier autorisation="A-P-C-S">preter.php</nomfichier>
 			<nomfichier autorisation="A-P-C-S">reserver.php</nomfichier>
+			<nomfichier autorisation="A-P-C-S">historique.php</nomfichier>
 		</fichier>
 		<menu>
 		<!-- liste des accès aux scripts du plugin apparaissant sur la page d'accueil et dans

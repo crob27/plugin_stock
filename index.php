@@ -46,10 +46,15 @@ if(calcul_autorisation_plugin_stock($_SESSION['login'], 'admin.php')) {
 ?>
 	<li><a href='reserver.php'>Réserver des ouvrages pour une période</a></li>
 	<li><a href='preter.php'>Prêter des exemplaires d'ouvrages, consulter les prêts</a></li>
+	<li><a href='historique.php'>Historique des prêts</a></li>
 	<!--
 	<li><a href=''></a></li>
 	-->
 </ul>
+<pre>
+A FAIRE : 
+Pour chaque exemplaire: pouvoir accéder à un historique des prêts
+</pre>
 <?php
 include("../../lib/footer.inc.php");
 ?>

@@ -23,7 +23,7 @@ $user_auth->verifDroits();
 
 include("./functions_plugin_stock.php");
 if(!calcul_autorisation_plugin_stock($_SESSION['login'], 'admin.php')) {
-	header("Location: ./index.php?msg=Accès non autrisé");
+	header("Location: ./index.php?msg=Accès non autorisé");
 	die();
 }
 
