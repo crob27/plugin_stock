@@ -72,7 +72,7 @@ if(isset($_POST['valider_saisie_ouvrage'])) {
 	if($titre!="" && $auteur!="" && $code !="") {
 		if(isset($id_ouvrage)) {
 			$sql="UPDATE plugin_stock_ouvrages SET titre='".$titre."', auteur='".$auteur."', code='".$code."' WHERE id='".$id_ouvrage."';";
-			//echo "$sql<br />";
+			//plugin_stock_echo_debug("$sql<br />");
 			$res=mysqli_query($mysqli, $sql);
 			if($res)
 			{
@@ -152,7 +152,7 @@ if(isset($_POST['valider_saisie_exemplaires'])) {
 			}
 
 			$sql.=" WHERE id='".$id_exemplaire."';";
-			//echo "$sql<br />";
+			//plugin_stock_echo_debug("$sql<br />");
 			$update=mysqli_query($mysqli, $sql);
 			if(!$update) {
 				$msg.="Erreur lors de la mise à jour de l'exemplaire d'identifiant ".$id_exemplaire.".<br />";
@@ -289,8 +289,7 @@ $themessage  = 'Des informations ont été modifiées. Voulez-vous vraiment quit
 $titre_page = "Plugin stock - Saisie ouvrages";
 require_once("../../lib/header.inc.php");
 //**************** FIN EN-TETE *************
-debug_var();
-
+//debug_var();
 
 echo "<p class=bold><a href=\"../../accueil.php\" onclick=\"return confirm_abandon (this, change, '$themessage')\"><img src='../../images/icons/back.png' alt='Retour' class='back_link'/> Retour à l'accueil</a> | 
 <a href=\"index.php\" onclick=\"return confirm_abandon (this, change, '$themessage')\">Retour à l'index</a>";

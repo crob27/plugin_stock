@@ -42,7 +42,7 @@ if(isset($_POST['is_posted'])) {
 	$nb_preteurs_supprimes=0;
 	$tab_user_sql=array();
 	$sql="SELECT * FROM plugin_stock_users WHERE statut='preteur';";
-	//echo "$sql<br />";
+	//plugin_stock_echo_debug("$sql<br />");
 	$res=mysqli_query($mysqli, $sql);
 	if(mysqli_num_rows($res)>0) {
 		while($lig=mysqli_fetch_object($res)) {
@@ -51,7 +51,7 @@ if(isset($_POST['is_posted'])) {
 			if(!in_array($lig->login, $login_user)) {
 				// Le prêteur n'est plus dans la liste des prêteurs cochés
 				$sql="DELETE FROM plugin_stock_users WHERE login='".$lig->login."';";
-				//echo "$sql<br />";
+				//plugin_stock_echo_debug("$sql<br />");
 				$del=mysqli_query($mysqli, $sql);
 				if($del) {
 					$nb_preteurs_supprimes++;
@@ -65,7 +65,7 @@ if(isset($_POST['is_posted'])) {
 
 	$tab_admin_sql=array();
 	$sql="SELECT * FROM plugin_stock_users WHERE statut='administrateur';";
-	//echo "$sql<br />";
+	//plugin_stock_echo_debug("$sql<br />");
 	$res=mysqli_query($mysqli, $sql);
 	if(mysqli_num_rows($res)>0) {
 		while($lig=mysqli_fetch_object($res)) {
@@ -81,7 +81,7 @@ if(isset($_POST['is_posted'])) {
 				if(in_array($current_login, $tab_admin_sql)) {
 					// Il était administrateur et ne l'est plus
 					$sql="UPDATE plugin_stock_users SET statut='preteur' WHERE login='".$current_login."';";
-					//echo "$sql<br />";
+					//plugin_stock_echo_debug("$sql<br />");
 					$update=mysqli_query($mysqli, $sql);
 					if($update) {
 						$nb_preteurs_ajoutes++;
@@ -92,7 +92,7 @@ if(isset($_POST['is_posted'])) {
 				}
 				else {
 					$sql="INSERT INTO plugin_stock_users SET login='".$current_login."', statut='preteur';";
-					//echo "$sql<br />";
+					//plugin_stock_echo_debug("$sql<br />");
 					$insert=mysqli_query($mysqli, $sql);
 					if($insert) {
 						$nb_preteurs_ajoutes++;
@@ -111,7 +111,7 @@ if(isset($_POST['is_posted'])) {
 	$nb_administrateurs_supprimes=0;
 	$tab_admin_sql=array();
 	$sql="SELECT * FROM plugin_stock_users WHERE statut='administrateur';";
-	//echo "$sql<br />";
+	//plugin_stock_echo_debug("$sql<br />");
 	$res=mysqli_query($mysqli, $sql);
 	if(mysqli_num_rows($res)>0) {
 		while($lig=mysqli_fetch_object($res)) {
@@ -122,7 +122,7 @@ if(isset($_POST['is_posted'])) {
 				// L'administrateur n'est plus dans la liste des administrateurs cochés
 				// et il n'est pas non plus dans la liste des prêteurs 
 				$sql="DELETE FROM plugin_stock_users WHERE login='".$lig->login."';";
-				//echo "$sql<br />";
+				//plugin_stock_echo_debug("$sql<br />");
 				$del=mysqli_query($mysqli, $sql);
 				if($del) {
 					$nb_administrateurs_supprimes++;
@@ -139,7 +139,7 @@ if(isset($_POST['is_posted'])) {
 		if(!in_array($current_login, $tab_admin_sql)) {
 			// L'administrateur n'était pas dans la liste des administrateurs enregistrés
 			$sql="INSERT INTO plugin_stock_users SET login='".$current_login."', statut='administrateur';";
-			//echo "$sql<br />";
+			//plugin_stock_echo_debug("$sql<br />");
 			$insert=mysqli_query($mysqli, $sql);
 			if($insert) {
 				$nb_administrateurs_ajoutes++;

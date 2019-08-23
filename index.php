@@ -23,6 +23,12 @@ $user_auth->verifDroits();
 
 include("./functions_plugin_stock.php");
 
+$plugin_stock_is_administrateur=plugin_stock_is_administrateur($_SESSION['login']);
+
+// Tri de tableaux
+$javascript_specifique[] = "lib/tablekit";
+$utilisation_tablekit="ok";
+
 //**************** EN-TETE *****************
 $titre_page = "Plugin stock (1)";
 require_once("../../lib/header.inc.php");
@@ -30,11 +36,11 @@ require_once("../../lib/header.inc.php");
 
 ?>
 
-<p class=bold><a href="../../accueil.php"><img src='../../images/icons/back.png' alt='Retour' class='back_link'/> Retour à l'accueil</a> | <a href="autre_script.php">Autre script</a></p>
+<p class='bold'><a href="../../accueil.php"><img src='../../images/icons/back.png' alt='Retour' class='back_link'/> Retour à l'accueil</a></p>
 
 <h2>Plugin stock</h2>
 
-<p>Choisissez&nbsp;:</p>
+<p>Veuillez choisir&nbsp;:</p>
 <ul>
 <?php
 
@@ -51,9 +57,63 @@ if(calcul_autorisation_plugin_stock($_SESSION['login'], 'admin.php')) {
 	<li><a href=''></a></li>
 	-->
 </ul>
-<pre>
+
+<?php
+	$sql="SELECT pso.titre, pso.auteur, pso.code, psex.numero, psem.* 
+			FROM plugin_stock_ouvrages pso,
+				plugin_stock_exemplaires psex, 
+				plugin_stock_emprunts psem 
+			WHERE psem.date_retour<'9999-01-01 00:00:00' AND 
+				psem.etat_retour!=psem.etat_initial AND 
+				psem.etat_retour!='' AND 
+				pso.id=psex.id_ouvrage AND 
+				psex.id_ouvrage=psem.id_ouvrage AND 
+				psem.id_exemplaire=psex.id 
+			ORDER BY id_ouvrage, id_exemplaire, date_retour DESC;";
+	plugin_stock_echo_debug("$sql<br />");
+	$res=mysqli_query($mysqli, $sql);
+	if(mysqli_num_rows($res)>0) {
+		echo "<p>Un ou des exemplaires d'ouvrages ont vu leur état requalifié.<br />
+		Ils ont pu être dégradés suite à une usure normale, ou à un usage inapproprié.<br />
+		A vous d'en juger et de voir quelles suites éventuelles donner.</p>
+		
+		<table class='boireaus boireaus_alt sortable resizable'>
+			<thead>
+				<tr>
+					<th>Ouvrage</th>
+					<th>Auteur</th>
+					<th>Numéro</th>
+					<th>Élève</th>
+					<th>Date prêt</th>
+					<th>Date retour</th>
+					<th>État initial</th>
+					<th>État retour</th>
+					<th>Prêteur</th>
+				</tr>
+			</thead>
+			<tbody>";
+		while($lig=mysqli_fetch_object($res)) {
+			echo "
+				<tr>
+					<td>".$lig->titre."</td>
+					<td>".$lig->auteur."</td>
+					<td>".$lig->numero."</td>
+					<td>".plugin_stock_get_eleve($lig->id_eleve)."</td>
+					<td>".formate_date($lig->date_pret)."</td>
+					<td>".formate_date($lig->date_retour)."</td>
+					<td>".$lig->etat_initial."</td>
+					<td>".$lig->etat_retour."</td>
+					<td>".civ_nom_prenom($lig->login_preteur)."</td>
+				</tr>";
+		}
+		echo "
+			</tbody>
+		</table>";
+	}
+?>
+<pre style='color:red'>
 A FAIRE : 
-Pour chaque exemplaire: pouvoir accéder à un historique des prêts
+- Gérer les dégradations
 </pre>
 <?php
 include("../../lib/footer.inc.php");

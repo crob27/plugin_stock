@@ -68,6 +68,8 @@
 			  `date_pret` DATETIME NOT NULL,
 			  `date_previsionnelle_retour` DATETIME NOT NULL,
 			  `date_retour` DATETIME NOT NULL,
+			  `etat_initial` varchar(50) NOT NULL DEFAULT '',
+			  `etat_retour` varchar(50) NOT NULL DEFAULT '',
 			  PRIMARY KEY (`id`),
 			  UNIQUE KEY `pret` (`id_ouvrage`,`id_exemplaire`,`id_eleve`,`annee_scolaire`,`date_pret`)
 			) ENGINE=MyISAM ;

@@ -194,4 +194,12 @@ function plugin_stock_enregistre_eleve($eleve) {
 
 	return $retour;
 }
+
+function plugin_stock_echo_debug($chaine) {
+	$debug=0;
+	//$debug=1;
+	if($debug==1) {
+		echo $chaine;
+	}
+}
 ?>

@@ -23,11 +23,40 @@ $user_auth->verifDroits();
 
 include("./functions_plugin_stock.php");
 
+$plugin_stock_is_administrateur=plugin_stock_is_administrateur($_SESSION['login']);
+
+$mes_id_groupes=array();
+if($_SESSION['statut']=='professeur') {
+	//$mes_groupes=get_groups_for_prof($_SESSION['login'], NULL, array('classes'));
+	$sql = "SELECT jgp.id_groupe, jgm.id_matiere, jgc.id_classe
+				FROM j_groupes_professeurs jgp, j_groupes_matieres jgm, j_groupes_classes jgc, classes c
+				WHERE (" .
+				"login = '" . $_SESSION['login'] . "'
+				AND jgp.id_groupe=jgm.id_groupe
+				AND jgp.id_groupe=jgc.id_groupe
+				AND jgc.id_classe=c.id) " .
+				"GROUP BY jgp.id_groupe ".
+				"ORDER BY jgm.id_matiere, c.classe" ;
+	$res=mysqli_query($mysqli, $sql);
+	while($lig=mysqli_fetch_object($res)) {
+		$mes_id_groupes[]=$lig->id_groupe;
+	}
+}
+
 $msg='';
 
 $id_classe=isset($_POST['id_classe']) ? $_POST['id_classe'] : (isset($_GET['id_classe']) ? $_GET['id_classe'] : NULL);
 $id_groupe=isset($_POST['id_groupe']) ? $_POST['id_groupe'] : (isset($_GET['id_groupe']) ? $_GET['id_groupe'] : NULL);
 $id_ouvrage=isset($_POST['id_ouvrage']) ? $_POST['id_ouvrage'] : (isset($_GET['id_ouvrage']) ? $_GET['id_ouvrage'] : NULL);
+
+$login_reservation=isset($_POST['login_reservation']) ? $_POST['login_reservation'] : (isset($_GET['login_reservation']) ? $_GET['login_reservation'] : $_SESSION['login']);
+if(!$plugin_stock_is_administrateur) {
+	$login_reservation=$_SESSION['login'];
+	$statut_login_reservation=$_SESSION['statut'];
+}
+else {
+	$statut_login_reservation=get_valeur_champ("utilisateurs", "login='".$login_reservation."'", "statut");
+}
 
 if(isset($id_ouvrage)) {
 	if((!preg_match('/^[0-9]{1,}$/', $id_ouvrage))||($id_ouvrage<1)) {
@@ -75,6 +104,9 @@ if(isset($id_groupe)) {
 	}
 }
 
+$mysql_date_courante=strftime("%Y-%m-%d %H:%M:%S");
+$mysql_date_courante_debut_journee=strftime("%Y-%m-%d")." 00:00:00";
+
 $date_debut=isset($_POST['date_debut']) ? $_POST['date_debut'] : (isset($_GET['date_debut']) ? $_GET['date_debut'] : strftime("%d/%m/%Y"));
 $date_fin=isset($_POST['date_fin']) ? $_POST['date_fin'] : (isset($_GET['date_fin']) ? $_GET['date_fin'] : strftime("%d/%m/%Y", time()+30*24*3600));
 
@@ -91,9 +123,91 @@ if(!check_date($date_fin)) {
 }
 
 $mysql_date_debut=get_mysql_date_from_slash_date($date_debut);
+//if($date_debut<strftime("%d/%m/%Y")) {
+//if($mysql_date_debut<$mysql_date_courante) {
+if($mysql_date_debut<$mysql_date_courante_debut_journee) {
+	$msg.="La date de début de réservation ($date_debut)";
+	$msg.="($mysql_date_debut)";
+	$msg.=" est antérieure à la date courante (".strftime("%d/%m/%Y").")";
+	$msg.="($mysql_date_courante)";
+	$msg.=".<br />Modification de la date de début pour ".strftime("%d/%m/%Y").".<br />";
+	$date_debut=strftime("%d/%m/%Y");
+	$mysql_date_debut=get_mysql_date_from_slash_date($date_debut);
+}
+
+$mysql_date_fin=get_mysql_date_from_slash_date($date_fin);
+//if($date_fin<strftime("%d/%m/%Y")) {
+//if($mysql_date_fin<$mysql_date_courante) {
+if($mysql_date_fin<$mysql_date_courante_debut_journee) {
+	$msg.="La date de fin de réservation ($date_fin)";
+	$msg.="($mysql_date_fin)";
+	$msg.=" est antérieure à la date courante (".strftime("%d/%m/%Y").")";
+	$msg.="($mysql_date_courante)";
+	$msg.=".<br />Modification de la date de fin pour ".strftime("%d/%m/%Y").".<br />";
+	$date_fin=strftime("%d/%m/%Y");
+	$mysql_date_fin=get_mysql_date_from_slash_date($date_fin);
+}
+
+$date_debut_annee_scolaire=strftime('%d/%m/%Y', getSettingValue('begin_bookings'));
+$date_fin_annee_scolaire=strftime('%d/%m/%Y', getSettingValue('end_bookings'));
+$mysql_date_debut_annee_scolaire=strftime('%Y-%m-%d %H:%M:%S', getSettingValue('begin_bookings'));
+$mysql_date_fin_annee_scolaire=strftime('%Y-%m-%d %H:%M:%S', getSettingValue('end_bookings'));
+//if($date_debut<$date_debut_annee_scolaire) {
+if($mysql_date_debut<$mysql_date_debut_annee_scolaire) {
+	$msg.="La date de début de réservation ($date_debut)";
+	$msg.="($mysql_date_debut)";
+	$msg.=" est antérieure à la date de début d'année (".$date_debut_annee_scolaire.")";
+	$msg.="($mysql_date_debut_annee_scolaire)";
+	$msg.=".<br />Modification de la date de début pour ".strftime("%d/%m/%Y").".<br />";
+	$date_debut=strftime('%d/%m/%Y');
+	$mysql_date_debut=get_mysql_date_from_slash_date($date_debut);
+}
+
+//if($date_debut>$date_fin_annee_scolaire) {
+if($mysql_date_debut>$mysql_date_fin_annee_scolaire) {
+	$msg.="La date de début de réservation ($date_debut)";
+	$msg.="($mysql_date_debut)";
+	$msg.=" est postérieure à la date de fin d'année (".$date_fin_annee_scolaire.")";
+	$msg.="($mysql_date_fin_annee_scolaire)";
+	$msg.=".<br />Modification de la date de début pour ".strftime("%d/%m/%Y").".<br />";
+	$date_debut=strftime('%d/%m/%Y');
+	$mysql_date_debut=get_mysql_date_from_slash_date($date_debut);
+}
+
+//if($date_fin<$date_debut_annee_scolaire) {
+if($mysql_date_fin<$mysql_date_debut_annee_scolaire) {
+	$msg.="La date de fin de réservation ($date_fin)";
+	$msg.="($mysql_date_fin)";
+	$msg.=" est antérieure à la date de début d'année (".$date_debut_annee_scolaire.")";
+	$msg.="($mysql_date_debut_annee_scolaire)";
+	$msg.=".<br />Modification de la date de fin pour ".strftime("%d/%m/%Y").".<br />";
+	$date_fin=strftime('%d/%m/%Y');
+	$mysql_date_fin=get_mysql_date_from_slash_date($date_fin);
+}
+
+//if($date_fin>$date_fin_annee_scolaire) {
+if($mysql_date_fin>$mysql_date_fin_annee_scolaire) {
+	$msg.="La date de fin de réservation ($date_fin)";
+	$msg.="($mysql_date_fin)";
+	$msg.=" est postérieure à la date de fin d'année (".$date_fin_annee_scolaire.")";
+	$msg.="($mysql_date_fin_annee_scolaire)";
+	$msg.=".<br />Modification de la date de fin pour ".strftime("%d/%m/%Y").".<br />";
+	$date_fin=strftime('%d/%m/%Y');
+	$mysql_date_fin=get_mysql_date_from_slash_date($date_fin);
+}
+
+//if($date_debut>$date_fin) {
+if($mysql_date_debut>$mysql_date_fin) {
+	$msg.="La date de début de réservation ($date_debut) est postérieure à la date de fin ($date_fin).<br />Interversion des dates.<br />";
+	$tmp_date_debut=$date_debut;
+	$date_debut=$date_fin;
+	$date_fin=$tmp_date_debut;
+}
+
+$mysql_date_debut=get_mysql_date_from_slash_date($date_debut);
 $mysql_date_fin=get_mysql_date_from_slash_date($date_fin);
 
-$date_courante=strftime("%Y-%m-%d %H:%M:%S");
+//$mysql_date_courante=strftime("%Y-%m-%d %H:%M:%S");
 $annee_scolaire=getSettingValue('gepiYear');
 
 $id_reservation=isset($_POST['id_reservation']) ? $_POST['id_reservation'] : (isset($_GET['id_reservation']) ? $_GET['id_reservation'] : NULL);
@@ -104,11 +218,15 @@ if(isset($id_reservation)) {
 		unset($id_reservation);
 	}
 
-	$sql="SELECT 1=1 FROM plugin_stock_reservations WHERE id='".$id_reservation."' AND login_preteur='".$_SESSION['login']."';";
-	$test=mysqli_query($mysqli, $sql);
-	if(mysqli_num_rows($test)==0) {
-		$msg.="Vous n'êtes pas le propriétaire de la réservation d'identifiant $id_reservation.<br />";
-		unset($id_reservation);
+	if(!$plugin_stock_is_administrateur) {
+		//$sql="SELECT 1=1 FROM plugin_stock_reservations WHERE id='".$id_reservation."' AND login_preteur='".$_SESSION['login']."';";
+		$sql="SELECT 1=1 FROM plugin_stock_reservations WHERE id='".$id_reservation."' AND login_preteur='".$login_reservation."';";
+		plugin_stock_echo_debug("$sql<br />");
+		$test=mysqli_query($mysqli, $sql);
+		if(mysqli_num_rows($test)==0) {
+			$msg.="Vous n'êtes pas le propriétaire de la réservation d'identifiant $id_reservation.<br />";
+			unset($id_reservation);
+		}
 	}
 }
 
@@ -138,13 +256,16 @@ if((isset($_POST['valider_reservation']))&&(isset($date_debut))&&(isset($date_fi
 											 OR 
 											(date_pret<='$mysql_date_fin' AND 
 											date_previsionnelle_retour>='$mysql_date_fin')
+											 OR 
+											(date_pret>='".$mysql_date_debut."' AND 
+											date_previsionnelle_retour<='".$mysql_date_fin."')
 										)
 							);";
-	echo "$sql<br />";
+	plugin_stock_echo_debug("$sql<br />");
 	$res=mysqli_query($mysqli, $sql);
 	$nb_exemplaires_non_pretes=mysqli_num_rows($res);
 
-	$sql="SELECT id FROM plugin_stock_reservations 
+	$sql="SELECT nb_exemplaires FROM plugin_stock_reservations 
 						WHERE id_ouvrage='".$id_ouvrage."' AND 
 							(
 								(date_previsionnelle_pret<='$mysql_date_debut' AND 
@@ -152,57 +273,84 @@ if((isset($_POST['valider_reservation']))&&(isset($date_debut))&&(isset($date_fi
 								 OR 
 								(date_previsionnelle_pret<='$mysql_date_fin' AND 
 								date_previsionnelle_retour>='$mysql_date_fin')
+								 OR 
+								(date_previsionnelle_pret>='".$mysql_date_debut."' AND 
+								date_previsionnelle_retour<='".$mysql_date_fin."')
 							);";
-	echo "$sql<br />";
+	plugin_stock_echo_debug("$sql<br />");
 	$res=mysqli_query($mysqli, $sql);
-	$nb_exemplaires_reserves=mysqli_num_rows($res);
+	$nb_exemplaires_reserves=0;
+	if(mysqli_num_rows($res)>0) {
+		while($lig=mysqli_fetch_object($res)) {
+			$nb_exemplaires_reserves+=$lig->nb_exemplaires;
+		}
+	}
 	$nb_exemplaires_dispo=$nb_exemplaires_non_pretes-$nb_exemplaires_reserves;
 
 	if($nb_exemplaires>$nb_exemplaires_dispo) {
 		$msg.="Le nombre d'exemplaires demandés ".$nb_exemplaires." est supérieur au nombre d'exemplaires disponibles (".$nb_exemplaires_dispo.") dans l'intervalle de dates choisie.<br />";
 	}
-
-	if(isset($id_reservation)) {
-		$sql="UPDATE plugin_stock_reservations SET id_ouvrage='".$id_ouvrage."', 
-									date_previsionnelle_pret='".$mysql_date_debut."', 
-									date_previsionnelle_retour='".$mysql_date_fin."', 
-									nb_exemplaires='".$nb_exemplaires."' 
-						WHERE id='".$id_reservation."' AND 
-							login_preteur='".$_SESSION['login']."';";
-		echo "$sql<br />";
-		$update=mysqli_query($mysqli, $sql);
-		if(!$update) {
-			$msg.="Erreur lors de la mise à jour de la réservation n°$id_reservation.<br />";
-		}
-		else {
-			$msg.="Réservation n°$id_reservation mise à jour.<br />";
-		}
-	}
 	else {
-		$sql="INSERT INTO plugin_stock_reservations 
-				SET id_ouvrage='".$id_ouvrage."', 
-					date_previsionnelle_pret='".$mysql_date_debut."', 
-					date_previsionnelle_retour='".$mysql_date_fin."', 
-					nb_exemplaires='".$nb_exemplaires."', 
-					annee_scolaire='".$annee_scolaire."', 
-					login_preteur='".$_SESSION['login']."', ";
-		if(isset($id_classe)) {
-			$sql.="
-					id_classe='".$id_classe."'";
-		}
-		elseif(isset($id_groupe)) {
-			$sql.="
-					id_groupe='".$id_groupe."'";
-		}
-		$sql.=";";
-		echo "$sql<br />";
-		$insert=mysqli_query($mysqli, $sql);
-		if(!$insert) {
-			$msg.="Erreur lors de l'enregistrement de la réservation.<br />";
+
+		if(isset($id_reservation)) {
+			/*
+			$sql="UPDATE plugin_stock_reservations SET id_ouvrage='".$id_ouvrage."', 
+										date_previsionnelle_pret='".$mysql_date_debut."', 
+										date_previsionnelle_retour='".$mysql_date_fin."', 
+										nb_exemplaires='".$nb_exemplaires."' 
+							WHERE id='".$id_reservation."' AND 
+								login_preteur='".$_SESSION['login']."';";
+			*/
+			$sql="UPDATE plugin_stock_reservations SET id_ouvrage='".$id_ouvrage."', 
+										date_previsionnelle_pret='".$mysql_date_debut."', 
+										date_previsionnelle_retour='".$mysql_date_fin."', 
+										nb_exemplaires='".$nb_exemplaires."' 
+							WHERE id='".$id_reservation."' AND 
+								login_preteur='".$login_reservation."';";
+			plugin_stock_echo_debug("$sql<br />");
+			$update=mysqli_query($mysqli, $sql);
+			if(!$update) {
+				$msg.="Erreur lors de la mise à jour de la réservation n°$id_reservation.<br />";
+			}
+			else {
+				$msg.="Réservation n°$id_reservation mise à jour.<br />";
+			}
 		}
 		else {
-			$msg.="Réservation enregistrée.<br />";
-			$id_reservation=mysqli_insert_id($mysqli);
+			/*
+			$sql="INSERT INTO plugin_stock_reservations 
+					SET id_ouvrage='".$id_ouvrage."', 
+						date_previsionnelle_pret='".$mysql_date_debut."', 
+						date_previsionnelle_retour='".$mysql_date_fin."', 
+						nb_exemplaires='".$nb_exemplaires."', 
+						annee_scolaire='".$annee_scolaire."', 
+						login_preteur='".$_SESSION['login']."', ";
+			*/
+			$sql="INSERT INTO plugin_stock_reservations 
+					SET id_ouvrage='".$id_ouvrage."', 
+						date_previsionnelle_pret='".$mysql_date_debut."', 
+						date_previsionnelle_retour='".$mysql_date_fin."', 
+						nb_exemplaires='".$nb_exemplaires."', 
+						annee_scolaire='".$annee_scolaire."', 
+						login_preteur='".$login_reservation."', ";
+			if(isset($id_classe)) {
+				$sql.="
+						id_classe='".$id_classe."'";
+			}
+			elseif(isset($id_groupe)) {
+				$sql.="
+						id_groupe='".$id_groupe."'";
+			}
+			$sql.=";";
+			plugin_stock_echo_debug("$sql<br />");
+			$insert=mysqli_query($mysqli, $sql);
+			if(!$insert) {
+				$msg.="Erreur lors de l'enregistrement de la réservation.<br />";
+			}
+			else {
+				$msg.="Réservation enregistrée.<br />";
+				$id_reservation=mysqli_insert_id($mysqli);
+			}
 		}
 	}
 }
@@ -214,7 +362,8 @@ if((isset($_GET['supprimer_reservation']))&&(isset($id_reservation))) {
 	$res=mysqli_query($mysqli, $sql);
 	if(mysqli_num_rows($res)>0) {
 		$lig=mysqli_fetch_object($res);
-		if(($lig->login_preteur==$_SESSION['login'])||(plugin_stock_is_administrateur($_SESSION['login']))) {
+		//if(($lig->login_preteur==$_SESSION['login'])||($plugin_stock_is_administrateur)) {
+		if(($lig->login_preteur==$login_reservation)||($plugin_stock_is_administrateur)) {
 			$sql="DELETE FROM plugin_stock_reservations WHERE id='".$id_reservation."';";
 			$del=mysqli_query($mysqli, $sql);
 			if($del) {
@@ -276,7 +425,7 @@ $javascript_specifique[] = "lib/DHTMLcalendar/calendar-setup";
 $titre_page = "Plugin stock - Réserver";
 require_once("../../lib/header.inc.php");
 //**************** FIN EN-TETE *************
-debug_var();
+//debug_var();
 
 echo "<p class='bold'>
 	<a href=\"../../accueil.php\" onclick=\"return confirm_abandon (this, change, '$themessage')\"><img src='../../images/icons/back.png' alt='Retour' class='back_link'/> Retour à l'accueil</a>
@@ -290,7 +439,21 @@ echo "<p class='bold'>
 			echo "
 		 | <a href=\"".$_SERVER['PHP_SELF']."?id_ouvrage=".$id_ouvrage."\" onclick=\"return confirm_abandon (this, change, '$themessage')\">Choisir une autre classe/enseignement</a>";
 		}
+
+		if($plugin_stock_is_administrateur) {
+			echo "
+			 | <a href=\"saisir_ouvrage.php?mode=saisir_ouvrage&id_ouvrage=".$id_ouvrage."\" onclick=\"return confirm_abandon (this, change, '$themessage')\">Éditer/modifier l'ouvrage</a>";
+		}
 	}
+
+	if($plugin_stock_is_administrateur) {
+		echo "
+		 | <a href=\"saisir_ouvrage.php\" onclick=\"return confirm_abandon (this, change, '$themessage')\">Saisir des ouvrages/exemplaires</a>";
+	}
+
+	echo "
+	 | <a href=\"preter.php\" onclick=\"return confirm_abandon (this, change, '$themessage')\">Prêter des ouvrages/exemplaires</a>
+	 | <a href=\"historique.php\" onclick=\"return confirm_abandon (this, change, '$themessage')\">Historique</a>";
 
 echo "</p>";
 
@@ -301,7 +464,9 @@ echo "</p>";
 A charge aux utilisateurs après ces saisies de s'entendre entre eux pour modifier éventuellement ces réservations.<br />
 Outre la personne qui a fait une réservation, les administrateurs du plugin peuvent supprimer des réservations.<br />
 Lors de la réalisation effective du prêt, la réservation sera supprimée.<br />
+<!--
 <span style='color:red'>A FAIRE&nbsp;: Permettre à un administrateur du plugin de réserver pour le compte d'un collègue.</span><br />
+-->
 </p>
 
 <?php
@@ -325,17 +490,16 @@ if(!isset($id_ouvrage)) {
 			</thead>
 			<tbody>";
 
-		$is_plugin_admin=plugin_stock_is_administrateur($_SESSION['login']);
 		while($lig=mysqli_fetch_object($res)){
-			$sql="select * from plugin_stock_exemplaires where id_ouvrage='".$lig->id."' AND statut!='perdu' AND date_de_retrait>='".$date_courante."';";
+			$sql="select * from plugin_stock_exemplaires where id_ouvrage='".$lig->id."' AND statut!='perdu' AND date_de_retrait>='".$mysql_date_courante."';";
 			$res2=mysqli_query($mysqli, $sql);
 			$nb_exemplaires=mysqli_num_rows($res2);
 
 			echo "
 				<tr>
 					<td>
-						".($is_plugin_admin ? "<div style='float:right; width:16px;'><a href='saisir_ouvrage.php?id_ouvrage=".$lig->id."' title=\"Éditer l'ouvrage\"><img src='../../images/edit16.png' class='icone16' /></a></div>" : '')."
-						".($nb_exemplaires>0 ? "<a href='".$_SERVER['PHP_SELF']."?id_ouvrage=".$lig->id."' title=\"Réserver l'ouvrage\">".$lig->titre."</a>" : $lig->titre)."
+						".($plugin_stock_is_administrateur ? "<div style='float:right; width:16px;'><a href='saisir_ouvrage.php?id_ouvrage=".$lig->id."' onclick=\"return confirm_abandon (this, change, '$themessage')\" title=\"Éditer l'ouvrage\"><img src='../../images/edit16.png' class='icone16' /></a></div>" : '')."
+						".($nb_exemplaires>0 ? "<a href='".$_SERVER['PHP_SELF']."?id_ouvrage=".$lig->id."' title=\"Réserver l'ouvrage\" onclick=\"return confirm_abandon (this, change, '$themessage')\">".$lig->titre."</a>" : $lig->titre)."
 					</td>
 					<td>".$lig->auteur."</td>
 					<td>".$lig->code."</td>
@@ -348,8 +512,8 @@ if(!isset($id_ouvrage)) {
 			//==================================
 			// Afficher le nombre d'exemplaires actuellement empruntés et un lien vers l'emprunt.
 			$sql="select 1=1 from plugin_stock_emprunts where id_ouvrage='".$lig->id."' AND 
-						date_pret<='".$date_courante."' AND 
-						date_retour>='".$date_courante."';";
+						date_pret<='".$mysql_date_courante."' AND 
+						date_retour>='".$mysql_date_courante."';";
 			$res2=mysqli_query($mysqli, $sql);
 			$nb=mysqli_num_rows($res2);
 
@@ -375,8 +539,8 @@ if(!isset($id_ouvrage)) {
 			}
 
 			$sql="select * from plugin_stock_reservations where id_ouvrage='".$lig->id."' AND 
-						date_previsionnelle_pret<='".$date_courante."' AND 
-						date_previsionnelle_retour>='".$date_courante."';";
+						date_previsionnelle_pret<='".$mysql_date_courante."' AND 
+						date_previsionnelle_retour>='".$mysql_date_courante."';";
 			$res2=mysqli_query($mysqli, $sql);
 			//$nb=mysqli_num_rows($res2);
 
@@ -408,18 +572,51 @@ if(!isset($id_ouvrage)) {
 //==============================================================
 // L'ouvrage est choisi : $current_ouvrage
 
+if($_SESSION['login']!=$login_reservation) {
+	echo "<p style='color:red; text-indent:-5.6em; margin-left:5.6em;'><em>Attention&nbsp;:</em> Réservation pour le compte de ".civ_nom_prenom($login_reservation).".<br />
+	<a href='reserver.php?id_ouvrage=".$id_ouvrage."' onclick=\"return confirm_abandon (this, change, '$themessage')\">Revenir à mon propre compte.</a></p>";
+}
+
+if(($plugin_stock_is_administrateur)&&(!isset($id_classe))&&(!isset($id_groupe))) {
+	$sql="SELECT DISTINCT u.login, u.nom, u.prenom, u.statut FROM plugin_stock_users psu, utilisateurs u WHERE u.login!='".$_SESSION['login']."' AND u.login=psu.login ORDER BY u.nom, u.prenom;";
+	$res=mysqli_query($mysqli, $sql);
+	if(mysqli_num_rows($res)>0) {
+		echo "
+<div style='float:right; width:15em; text-align:center;padding:0.3em;' class='fieldset_opacite50' title=\"Réserver pour mon propre compte ou pour le compte d'un collègue.\">
+	<form action='reserver.php' method='post'>
+		<input type='hidden' name='id_ouvrage' value='$id_ouvrage' />
+		<select name='login_reservation'>
+			<option value='".$_SESSION['login']."'>".$_SESSION['nom']." ".$_SESSION['prenom']."</option>";
+		while($lig=mysqli_fetch_object($res)) {
+			if((isset($login_reservation))&&($login_reservation==$lig->login)) {
+				$selected=' selected';
+			}
+			else {
+				$selected='';
+			}
+			echo "
+			<option value='".$lig->login."' title=\"".$lig->statut."\"".$selected.">".$lig->nom." ".$lig->prenom."</option>";
+		}
+		echo "
+		</select>
+		<p><input type='submit' value='Réserver pour ce compte' /></p>
+	</form>
+</div>";
+	}
+}
+
 echo "<h3>".plugin_stock_afficher_ouvrage($id_ouvrage)."</h3>";
 
 //==================================
 
 // AFFICHER LE NOMBRE D'EXEMPLAIRES DISPO, LES RESA A VENIR
 
-$sql="select * from plugin_stock_exemplaires where id_ouvrage='".$id_ouvrage."' AND statut!='perdu' AND date_de_retrait>='".$date_courante."' ORDER BY numero;";
+$sql="select * from plugin_stock_exemplaires where id_ouvrage='".$id_ouvrage."' AND statut!='perdu' AND date_de_retrait>='".$mysql_date_courante."' ORDER BY numero;";
 $res2=mysqli_query($mysqli, $sql);
 $nb_exemplaires=mysqli_num_rows($res2);
 echo "<p>L'ouvrage compte ".$nb_exemplaires." exemplaire(s)";
-	if(plugin_stock_is_administrateur($_SESSION['login'])) {
-		echo " <a href='saisir_ouvrage.php?id_ouvrage=".$id_ouvrage."&mode=saisir_exemplaire' title=\"Ajouter/supprimer des exemplaires, saisir leur état,...\"><img src='../../images/edit16.png' class='icone16' /></a>";
+	if($plugin_stock_is_administrateur) {
+		echo " <a href='saisir_ouvrage.php?id_ouvrage=".$id_ouvrage."&mode=saisir_exemplaire' onclick=\"return confirm_abandon (this, change, '$themessage')\" title=\"Ajouter/supprimer des exemplaires, saisir leur état,...\"><img src='../../images/edit16.png' class='icone16' /></a>";
 	}
 	echo ".</p>";
 if($nb_exemplaires==0) {
@@ -438,17 +635,17 @@ while($lig2=mysqli_fetch_assoc($res2)) {
 // Afficher le nombre d'exemplaires actuellement empruntés et un lien vers l'emprunt.
 $tab_exemplaires_empruntes=array();
 $sql="select 1=1 from plugin_stock_emprunts where id_ouvrage='".$id_ouvrage."' AND 
-			date_pret<='".$date_courante."' AND 
-			date_retour>='".$date_courante."';";
+			date_pret<='".$mysql_date_courante."' AND 
+			date_retour>='".$mysql_date_courante."';";
 $res2=mysqli_query($mysqli, $sql);
 $nb_emprunts=mysqli_num_rows($res2);
 if($nb_emprunts>0) {
 	echo "<p style='margin-left:3em; text-indent:-3em;'><strong>Emprunts&nbsp;:</strong> ".$nb_emprunts." exemplaire(s) de l'ouvrage sont actuellement emprunté(s)&nbsp;:<br />";
 
 	$sql="select *, COUNT(id_exemplaire) AS nb_exemplaires from plugin_stock_emprunts where id_ouvrage='".$id_ouvrage."' AND 
-			date_pret<='".$date_courante."' AND 
-			date_retour>='".$date_courante."' 
-			GROUP BY login_preteur, date_pret, date_previsionnelle_retour, id_classe, id_groupe;";
+			date_pret<='".$mysql_date_courante."' AND 
+			date_retour>='".$mysql_date_courante."' 
+			GROUP BY login_preteur, DATE(date_pret), date_previsionnelle_retour, id_classe, id_groupe;";
 	$res2=mysqli_query($mysqli, $sql);
 	while($lig2=mysqli_fetch_object($res2)) {
 		// Afficher les emprunts en cours
@@ -462,7 +659,7 @@ if($nb_emprunts>0) {
 		echo " <em>(".civ_nom_prenom($lig2->login_preteur).")</em>";
 
 		if($lig2->id_groupe!=0) {
-			if((plugin_stock_is_administrateur($_SESSION['login']))||(in_array($lig2->id_groupe, $mes_id_groupes))) {
+			if(($plugin_stock_is_administrateur)||(in_array($lig2->id_groupe, $mes_id_groupes))) {
 				echo "
 				<a href='preter.php?id_ouvrage=".$id_ouvrage."&id_groupe=".$lig2->id_groupe."' title=\"Consulter le prêt.\" onclick=\"return confirm_abandon (this, change, '$themessage')\">
 					<img src='../../images/edit16.png' class='icone16' />
@@ -470,7 +667,7 @@ if($nb_emprunts>0) {
 			}
 		}
 		elseif($lig2->id_classe!=0) {
-			if((plugin_stock_is_administrateur($_SESSION['login']))||($_SESSION['statut']!='professeur')) {
+			if(($plugin_stock_is_administrateur)||($_SESSION['statut']!='professeur')) {
 				echo "
 				<a href='preter.php?id_ouvrage=".$id_ouvrage."&id_classe=".$lig2->id_classe."' title=\"Consulter le prêt.\" onclick=\"return confirm_abandon (this, change, '$themessage')\">
 					<img src='../../images/edit16.png' class='icone16' />
@@ -485,8 +682,8 @@ if($nb_emprunts>0) {
 
 	echo "<p>Classes concernées par ces prêts&nbsp;: ";
 	$sql="select DISTINCT classe from plugin_stock_emprunts where id_ouvrage='".$id_ouvrage."' AND 
-			date_pret<='".$date_courante."' AND 
-			date_retour>='".$date_courante."' 
+			date_pret<='".$mysql_date_courante."' AND 
+			date_retour>='".$mysql_date_courante."' 
 			ORDER BY classe;";
 	$res2=mysqli_query($mysqli, $sql);
 	$cpt_tmp=0;
@@ -500,9 +697,9 @@ if($nb_emprunts>0) {
 	echo "</p>";
 
 	$sql="select * from plugin_stock_emprunts where id_ouvrage='".$id_ouvrage."' AND 
-			date_pret<='".$date_courante."' AND 
-			date_retour>='".$date_courante."';";
-	//echo "$sql<br />";
+			date_pret<='".$mysql_date_courante."' AND 
+			date_retour>='".$mysql_date_courante."';";
+	//plugin_stock_echo_debug("$sql<br />");
 	$res2=mysqli_query($mysqli, $sql);
 	while($lig2=mysqli_fetch_assoc($res2)) {
 		$tab_exemplaires_empruntes[$lig2['id_exemplaire']]=$lig2;
@@ -513,31 +710,35 @@ if($nb_emprunts>0) {
 
 //==================================
 // Afficher les réservations à venir avec le nombre d'exemplaires.
-
+/*
 echo "
 			<div style='float:right;width:16px'>
-				<a href='reserver.php?id_ouvrage=".$id_ouvrage."' title=\"Réserver des exemplaires.\" onclick=\"return confirm_abandon (this, change, '$themessage')\"><img src='../../images/icons/calendrier.gif' class='icone16' /></a>
+				<a href='reserver.php?id_ouvrage=".$id_ouvrage."&login_reservation=".$login_reservation."' title=\"Réserver des exemplaires.\" onclick=\"return confirm_abandon (this, change, '$themessage')\"><img src='../../images/icons/calendrier.gif' class='icone16' /></a>
 			</div>";
-
+*/
 /*
 $sql="select * from plugin_stock_reservations where id_ouvrage='".$id_ouvrage."' AND 
-			date_previsionnelle_pret<='".$date_courante."' AND 
-			date_previsionnelle_retour>='".$date_courante."';";
+			date_previsionnelle_pret<='".$mysql_date_courante."' AND 
+			date_previsionnelle_retour>='".$mysql_date_courante."';";
 */
 $sql="select * from plugin_stock_reservations where id_ouvrage='".$id_ouvrage."' AND 
-			date_previsionnelle_retour>='".$date_courante."';";
+			date_previsionnelle_retour>='".$mysql_date_courante."';";
 $res2=mysqli_query($mysqli, $sql);
 
 if(mysqli_num_rows($res2)>0) {
 	echo "<p style='margin-left:3em; text-indent:-3em;'><strong>Réservations&nbsp;:</strong><br />";
 	while($lig2=mysqli_fetch_assoc($res2)) {
-		if(($lig2['login_preteur']==$_SESSION['login'])||(plugin_stock_is_administrateur($_SESSION['login']))) {
+		//if(($lig2['login_preteur']==$_SESSION['login'])||($plugin_stock_is_administrateur)) {
+		//echo "\$lig2['login_preteur']=".$lig2['login_preteur']." et \$login_reservation=$login_reservation ";
+		if(($lig2['login_preteur']==$login_reservation)||($plugin_stock_is_administrateur)) {
+			// $plugin_stock_is_administrateur est calculé sur $_SESSION['login']
+			// Dans le cas d'une réservation pour un autre compte, on garde le droit $plugin_stock_is_administrateur
 			echo "
-			<a href='reserver.php?id_ouvrage=".$id_ouvrage."&id_reservation=".$lig2['id']."' title=\"Consulter/modifier la réservation n°".$lig2['id'].".\" onclick=\"return confirm_abandon (this, change, '$themessage')\">".$lig2['nb_exemplaires']." exemplaire(s) réservé(s) (".formate_date($lig2['date_previsionnelle_pret'])."-&gt;".formate_date($lig2['date_previsionnelle_retour']).") par ".civ_nom_prenom($lig2['login_preteur'])." pour ".($lig2['id_classe']!=0 ? get_nom_classe($lig2['id_classe']) : get_info_grp($lig2['id_groupe']))."</a>";
+			<a href='reserver.php?id_ouvrage=".$id_ouvrage."&id_reservation=".$lig2['id']."&login_reservation=".$login_reservation."' title=\"Consulter/modifier la réservation n°".$lig2['id'].".\" onclick=\"return confirm_abandon (this, change, '$themessage')\">".$lig2['nb_exemplaires']." exemplaire(s) réservé(s) (".formate_date($lig2['date_previsionnelle_pret'])."-&gt;".formate_date($lig2['date_previsionnelle_retour']).") par ".civ_nom_prenom($lig2['login_preteur'])." pour ".($lig2['id_classe']!=0 ? get_nom_classe($lig2['id_classe']) : get_info_grp($lig2['id_groupe']))."</a>";
 
 			// A FAIRE : Pouvoir supprimer la réservation si on est administrateur ou si on est l'auteur de la réservation
 			echo "
-			<a href='reserver.php?id_ouvrage=".$id_ouvrage."&id_reservation=".$lig2['id']."&supprimer_reservation=y".add_token_in_url()."' title=\"Supprimer la réservation n°".$lig2['id'].".\" onclick=\"return confirm('Étes-vous sûr de vouloir supprimer cette réservation ?')\">
+			<a href='reserver.php?id_ouvrage=".$id_ouvrage."&id_reservation=".$lig2['id']."&supprimer_reservation=y&login_reservation=".$login_reservation.add_token_in_url()."' title=\"Supprimer la réservation n°".$lig2['id'].".\" onclick=\"return confirm('Étes-vous sûr de vouloir supprimer cette réservation ?')\">
 				<img src='../../images/delete16.png' class='icone16' />
 			</a>";
 
@@ -648,7 +849,7 @@ if((isset($id_classe))||(isset($id_groupe))) {
 					$tab_ele[$lig_ele['id_eleve']]['classe']=get_chaine_liste_noms_classes_from_ele_login($lig_ele['login']);
 				}
 				else {
-					$tmp_clas=get_clas_ele_telle_date($lig_ele['login'], $date_courante);
+					$tmp_clas=get_clas_ele_telle_date($lig_ele['login'], $mysql_date_courante);
 					if(isset($tmp_clas['classe'])) {
 						//$tab_ele[$lig_ele['id_eleve']]['classe']=get_nom_classe($current_group['classes']['list'][0]);
 						$tab_ele[$lig_ele['id_eleve']]['classe']=$tmp_clas['classe'];
@@ -681,9 +882,10 @@ if((isset($id_classe))||(isset($id_groupe))) {
 			<input type='hidden' name='id_reservation' value='$id_reservation' />";
 	}
 	echo "
+			<input type='hidden' name='login_reservation' value=\"$login_reservation\" />
 			<input type='hidden' name='id_ouvrage' value='$id_ouvrage' />
 			<p>Vous souhaitez réserver des exemplaires du 
-						<input type='text' name='date_debut' id='date_debut' size='10' value=\"".$date_debut."\" onKeyDown=\"clavier_date(this.id,event);\" onchange='changement()' AutoComplete=\"off\" />
+						<input type='text' name='date_debut' id='date_debut' size='10' value=\"".$date_debut."\" onKeyDown=\"clavier_date(this.id,event);\" onchange='changement()' AutoComplete=\"off\" onblur=\"check_debut_fin()\" />
 						".img_calendrier_js("date_debut", "img_bouton_date_debut")."
 					au
 						<input type='text' name='date_fin' id='date_fin' size='10' value=\"".$date_fin."\" onKeyDown=\"clavier_date(this.id,event);\" onchange='changement()' AutoComplete=\"off\" />
@@ -734,15 +936,18 @@ if((isset($id_classe))||(isset($id_groupe))) {
 											 OR 
 											(date_pret<='$mysql_date_fin' AND 
 											date_previsionnelle_retour>='$mysql_date_fin')
+											 OR 
+											(date_pret>='".$mysql_date_debut."' AND 
+											date_previsionnelle_retour<='".$mysql_date_fin."')
 										)
 							);";
-	echo "$sql<br />";
+	plugin_stock_echo_debug("$sql<br />");
 	$res=mysqli_query($mysqli, $sql);
 	$nb_exemplaires_non_pretes=mysqli_num_rows($res);
 
 	echo "<p>En déduisant les éventuels exemplaires actuellement prêtés, le stock compte ".$nb_exemplaires_non_pretes." exemplaires ";
 
-	$sql="SELECT id FROM plugin_stock_reservations 
+	$sql="SELECT nb_exemplaires FROM plugin_stock_reservations 
 						WHERE id_ouvrage='".$id_ouvrage."' AND 
 							(
 								(date_previsionnelle_pret<='$mysql_date_debut' AND 
@@ -750,10 +955,18 @@ if((isset($id_classe))||(isset($id_groupe))) {
 								 OR 
 								(date_previsionnelle_pret<='$mysql_date_fin' AND 
 								date_previsionnelle_retour>='$mysql_date_fin')
+								 OR 
+								(date_previsionnelle_pret>='".$mysql_date_debut."' AND 
+								date_previsionnelle_retour<='".$mysql_date_fin."')
 							);";
-	echo "$sql<br />";
+	plugin_stock_echo_debug("$sql<br />");
 	$res=mysqli_query($mysqli, $sql);
-	$nb_exemplaires_reserves=mysqli_num_rows($res);
+	$nb_exemplaires_reserves=0;
+	if(mysqli_num_rows($res)>0) {
+		while($lig=mysqli_fetch_object($res)) {
+			$nb_exemplaires_reserves+=$lig->nb_exemplaires;
+		}
+	}
 	$nb_exemplaires_dispo=$nb_exemplaires_non_pretes-$nb_exemplaires_reserves;
 
 	echo "dont ".$nb_exemplaires_reserves." sont réservés dans l'intervalle de dates choisi.<br />
@@ -777,6 +990,7 @@ if((isset($id_classe))||(isset($id_groupe))) {
 		<fieldset class='fieldset_opacite50'>
 			<h3>Formulaire de validation de la réservation</h3>
 			".add_token_field()."
+			<input type='hidden' name='login_reservation' value=\"$login_reservation\" />
 			<input type='hidden' name='id_ouvrage' value='$id_ouvrage' />
 			<input type='hidden' name='date_debut' value='$date_debut' />
 			<input type='hidden' name='date_fin' value='$date_fin' />
@@ -807,18 +1021,78 @@ if((isset($id_classe))||(isset($id_groupe))) {
 	echo "
 			<p><input type='submit' value=\"Valider la réservation\" /></p>
 		</fieldset>
-	</form>";
+	</form>
+
+	<script type='text/javascript'>
+		function check_debut_fin() {
+			date_debut=document.getElementById('date_debut').value;
+			date_fin=document.getElementById('date_fin').value;
+			/*
+			if(date_fin<date_debut) {
+				document.getElementById('date_fin').value=date_debut;
+			}
+			*/
+
+			cur_date=date_debut.split('/');
+			cur_jour=cur_date[0];
+			if(cur_jour.substr(0,1)=='0') {cur_jour=cur_jour.substr(1);}
+			cur_mois=cur_date[1];
+			if(cur_mois.substr(0,1)=='0') {cur_mois=cur_mois.substr(1);}
+			cur_an=cur_date[2];
+			if(cur_an<1900) {cur_an=eval(cur_an+1900);}
+
+			if(!checkdate(cur_mois, cur_jour, cur_an)) {
+				cur_date=new Date();
+				cur_jour=cur_date.getDate();
+				cur_mois=eval(cur_date.getMonth()+1);
+				cur_an=cur_date.getYear();
+				if(cur_an<1900) {cur_an=eval(cur_an+1900);}
+
+				document.getElementById('date_debut').value=cur_jour+'/'+cur_mois+'/'+cur_an;
+			}
+			tmp_date_debut=eval(eval(cur_an*10000)+eval(cur_mois*100)+eval(cur_jour));
+
+
+			cur_date=date_fin.split('/');
+			cur_jour=cur_date[0];
+			if(cur_jour.substr(0,1)=='0') {cur_jour=cur_jour.substr(1);}
+			cur_mois=cur_date[1];
+			if(cur_mois.substr(0,1)=='0') {cur_mois=cur_mois.substr(1);}
+			cur_an=cur_date[2];
+			if(cur_an<1900) {cur_an=eval(cur_an+1900);}
+
+			if(!checkdate(cur_mois, cur_jour, cur_an)) {
+				cur_date=new Date();
+				cur_jour=cur_date.getDate();
+				cur_mois=eval(cur_date.getMonth()+1);
+				cur_an=cur_date.getYear();
+				if(cur_an<1900) {cur_an=eval(cur_an+1900);}
+
+				document.getElementById('date_fin').value=cur_jour+'/'+cur_mois+'/'+cur_an;
+			}
+			tmp_date_fin=eval(eval(cur_an*10000)+eval(cur_mois*100)+eval(cur_jour));
+
+			//alert('Comparaison de date_debut='+tmp_date_debut+' et date_fin='+tmp_date_fin);
+
+			if(tmp_date_fin<tmp_date_debut) {
+				document.getElementById('date_fin').value=date_debut;
+			}
+
+		}
+	</script>";
 
 	include("../../lib/footer.inc.php");
 	die();
 }
 else {
 	// Choisir le groupe ou la classe
-	if($_SESSION['statut']=='professeur') {
+	//if($_SESSION['statut']=='professeur') {
+	if($statut_login_reservation=='professeur') {
 		// Choix groupe
 
 		// Dans le cas d'un administrateur, pouvoir faire le prêt pour le compte d'un autre utilisateur
-		$_login=$_SESSION['login'];
+		//$_login=$_SESSION['login'];
+		$_login=$login_reservation;
 		$groups=get_groups_for_prof($_login);
 
 		if(count($groups)==0) {
@@ -833,7 +1107,7 @@ else {
 		$nbcol=2;
 		foreach($groups as $key => $current_group) {
 			$tab_txt[]=$current_group['name']." <em>(".$current_group['description'].")</em> <em>(".$current_group['classlist_string'].")</em>";
-			$tab_lien[]=$_SERVER['PHP_SELF']."?id_ouvrage=".$id_ouvrage."&id_groupe=".$current_group['id'];
+			$tab_lien[]=$_SERVER['PHP_SELF']."?id_ouvrage=".$id_ouvrage."&id_groupe=".$current_group['id']."&login_reservation=".$login_reservation;
 		}
 
 		echo tab_liste($tab_txt,$tab_lien,$nbcol);
@@ -864,7 +1138,7 @@ else {
 		$nbcol=3;
 		while($lig_clas=mysqli_fetch_object($res_clas)) {
 			$tab_txt[]=$lig_clas->classe;
-			$tab_lien[]=$_SERVER['PHP_SELF']."?id_ouvrage=".$id_ouvrage."&id_classe=".$lig_clas->id;
+			$tab_lien[]=$_SERVER['PHP_SELF']."?id_ouvrage=".$id_ouvrage."&id_classe=".$lig_clas->id."&login_reservation=".$login_reservation;
 		}
 
 		echo tab_liste($tab_txt,$tab_lien,$nbcol);
